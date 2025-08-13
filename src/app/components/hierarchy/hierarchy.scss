@@ -1,0 +1,38 @@
+.tree-list {
+  list-style-type: none;
+  padding-left: 20px;
+  
+  .tree-item {
+    cursor: pointer;
+    display: flex;
+    gap: 5px;
+    margin: 5px 0px;
+    line-height: 30px;
+
+    a {
+      color: #000000;
+      text-decoration: none;
+      opacity: 0.6;
+
+      &:hover {
+        text-decoration: underline;
+      }
+
+      &.selected {
+        color: #4273bf;
+        opacity: 1;
+      }
+    }
+  }
+  
+  .folder-icon {
+    color: #ff7200;
+    font-size: 20px;
+  }
+  
+  .doc-icon {
+    color: #ff7200;
+    font-size: 20px;
+  }
+  
+}

@@ -1,0 +1,53 @@
+<div class="help-tool">
+    <div>
+        <ul class="breadcrumb">
+            <li>
+                <a [routerLink]="['/']" class="btn">
+                    <span class="dl-home"></span>
+                </a>
+            </li>
+            <li>
+                <span id="activeFileName">Instruction Manual</span>
+                <button type="button" class="btn" title="Copy URL">
+                    <span class="dl-copy"></span>
+                    <span class="copy-feedback">URL copied!</span>
+                </button>
+            </li>
+        </ul>
+    </div>
+    
+    <!-- <div>
+        <button type="button" class="btn" title="Search">
+            <span class="dl-search"></span>
+        </button>
+        <button type="button" class="btn" title="Share">
+            <span class="dl-share"></span>
+        </button>
+        <button type="button" class="btn" title="Print">
+            <span class="dl-printer"></span>
+        </button>
+    </div> -->
+</div>
+
+<div class="document-wrapper">
+    <div class="left-nav" [class.left-nav-scroll-fix]="activeScroll">
+        <div class="hierarchy-holder">
+            <app-hierarchy [data]="treeData"></app-hierarchy>
+        </div>
+    </div>
+    <div class="document-viewer" [innerHTML]="documentContentHtml"></div>
+    <div class="right-nav">
+        <h3>Table of Contents</h3>
+        <ul class="toc">
+            @for(nav of tocNav; track nav.id) {
+                <li>
+                    <a [routerLink]="[]" [fragment]="nav.url.substring(1)">{{nav.label}}</a>
+                </li>
+            }
+        </ul>
+    </div>
+</div>
+
+<button id="gotoTop" type="button" [class.visible]="activeScroll" (click)="gotoTop()">
+    <span class="dl-top"></span>
+</button>

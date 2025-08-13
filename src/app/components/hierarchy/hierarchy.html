@@ -1,0 +1,24 @@
+<ul class="tree-list">
+  <li *ngFor="let node of data">
+    <div class="tree-item">
+      <span *ngIf="isFolder(node)" class="folder-icon">
+        <span class="dl-folder-open"></span>
+      </span>
+      <span *ngIf="isDocument(node)" class="doc-icon">
+        <span class="dl-document"></span>
+      </span>
+
+      <span *ngIf="isFolder(node)">{{ node.text }}</span>
+      <a *ngIf="isDocument(node)" [class.selected]="node.id === selectedId" [routerLink]="['/products/spc', node.id]">
+        <span>{{ node.text }}</span>
+      </a>
+    </div>
+
+    <!-- Recursive tree for children -->
+    <app-hierarchy
+      *ngIf="isFolder(node)"
+      [data]="node.children"
+    >
+    </app-hierarchy>
+  </li>
+</ul>

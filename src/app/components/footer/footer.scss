@@ -1,0 +1,144 @@
+footer {
+    background-color: #f3f8ff;
+    border-top: solid 1px #c0cfe3;
+    
+    .wrapper {
+        display: flex;
+        justify-content: space-between;
+        padding: 0px 20px;
+
+        .logo {
+            width: 15%;
+            text-align: center;
+            padding: 20px 0px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+
+            .icon {
+                width: 60%;
+                img {
+                    height: 60px;
+                }
+            }
+            .brand {
+                width: 60%;
+                margin-top: 10px;
+                img {
+                    height: 40px;
+                }
+            }
+        }
+
+        .products {
+            border-left: solid 1px rgba(0,0,0,0.1);
+            border-right: solid 1px rgba(0,0,0,0.1);
+            padding: 20px 50px;
+            width: 30%;
+
+            ul {
+                margin-top: 10px;
+                list-style: none;
+
+                li {
+                    margin: 5px 0px;
+                    position: relative;
+                    padding-left: 18px;
+
+                    &::before {
+                        color: #ff7200;
+                        content: "\2022";
+                        display: inline-block;
+                        font-size: 24px;
+                        font-weight: 700;
+                        line-height: 1em;
+                        position: absolute;
+                        top: -2px;
+                        left: 0px;
+                    }
+
+                    a {
+                        font-size: 14px;
+                        text-decoration: none;
+                        color: #000000;
+
+                        &:hover {
+                            text-decoration: underline;
+                        }
+                    }
+                }
+            }
+        }
+
+        .connect {
+            width: 55%;
+            padding: 20px 0px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+
+            .social {
+                display: flex;
+                justify-content: flex-end;
+                align-items: center;
+                gap: 10px;
+
+                ul {
+                    display: inline-flex;
+                    list-style: none;
+                    gap: 10px;
+
+                    li {
+                        a {
+                            text-decoration: none;
+                            display: block;
+                        }
+                    }
+
+                }
+            }
+            
+            .contact {
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
+                gap: 10px;
+                border-top: solid 1px rgba(0,0,0,0.1);
+                margin-top: 15px;
+                padding: 20px 0px 0px;
+
+                div {
+                    display: inline-flex;
+                    gap: 5px;
+                }
+
+                [class^="dl-"], [class*=" dl-"] {
+                    color: #ff7200;
+                    font-size: 18px;
+                }
+            }
+        }
+
+        a {
+            color: #333333;
+        }
+
+        .btn {
+            background-color: #ffffff;
+            border: solid 2px #ff7200;
+            color: #ff7200;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            position: relative;
+            padding: 5px 7px;
+            
+            &:hover {
+                background-color: #ff7200;
+                border: solid 2px #ff7200;
+                color: #ffffff;
+            }
+        }
+    }
+}

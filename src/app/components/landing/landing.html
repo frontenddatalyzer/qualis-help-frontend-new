@@ -1,0 +1,55 @@
+<div class="wrapper">
+    <!-- <div class="radio-holder">
+        @for (product of products; track product) {
+            <label>
+                <input type="radio" name="product" [value]="product" [(ngModel)]="selectedProduct" />
+                <span>
+                    <span class="dl-check"></span>
+                    <span>{{ product }}</span>
+                </span>
+            </label>
+        }
+    </div> -->
+
+    <div class="search-holder">
+        <form (submit)="onSearch(); $event.preventDefault()">
+            <div class="input-group">
+                <input type="text" class="form-control" name="search" [(ngModel)]="search" placeholder="Search In SPC" (input)="onSearch()" />
+                <button type="button" class="btn icon primary">
+                    <span class="dl-search"></span>
+                </button>
+            </div>
+        </form>
+        
+        <!-- Search Results -->
+        <div *ngIf="searchResults.length > 0" class="search-results">
+            <div *ngFor="let doc of searchResults" class="result-item">
+                <a [routerLink]="['/products/spc', doc.id]" [queryParams]="{ q: search }">
+                    <h5>{{ doc.text }}</h5>
+                    <p [innerHTML]="doc.snippet"></p>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="action-holder">
+        <button type="button" class="btn" (click)="gotoHelp()">
+            <span class="dl-document"></span>
+            <span>Qualis 4.0 SPC Table of Contents</span>
+        </button>
+    </div>
+
+    <div class="card-section">
+        <h4>Top Help Documents</h4>
+        <div class="card-holder">
+            @for(doc of firstThreeDocs; track $index) {
+                <div class="card">
+                    <a [routerLink]="['/products/spc', doc.id]">
+                        <p *ngIf="doc?.text; else noDesc">{{ doc.text }}</p>
+                        <ng-template #noDesc>No description</ng-template>
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</div>
