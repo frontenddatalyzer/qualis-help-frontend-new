@@ -46,9 +46,12 @@ export class Landing {
     this.landingService.getDocumentationNodes().subscribe({
       next: (response: any) => {
         const treeData = response?.data ?? [];
+        
+        // Keep only items where showTree === true
+        const filteredTreeData = response.data[0].children.filter((item: any) => item.showTree);
 
         // Flatten all document nodes into a list
-        this.allDocs = this.flattenDocs(treeData);
+        this.allDocs = this.flattenDocs(filteredTreeData);
 
         // Store first 3 docs for home display
         this.firstThreeDocs = this.allDocs.slice(0, 3);
@@ -121,6 +124,6 @@ export class Landing {
   }
 
   gotoHelp() {
-    this.router.navigate(['products/spc/'+this.firstDocID]);
+    this.router.navigate(['products/spc']);
   }
 }

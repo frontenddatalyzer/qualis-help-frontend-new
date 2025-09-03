@@ -1,1 +1,30 @@
-<app-common-help></app-common-help>
+<div class="help-tool">
+    <div>
+        <ul class="breadcrumb">
+            <li>
+                <a [routerLink]="['/']" class="btn">
+                    <span class="dl-home"></span>
+                </a>
+            </li>
+            <li>
+                <span>Qualis 4.0 SPC</span>
+                
+                <button type="button" class="btn" title="Copy URL" (click)="copyUrl()">
+                    <span class="dl-copy"></span>
+                    @if(urlCopied) {
+                        <span class="copy-feedback">URL copied!</span>
+                    }
+                </button>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<div class="document-wrapper">
+    <div class="left-nav">
+        <h1>Qualis 4.0 SPC Table of Contents</h1>
+        <div class="hierarchy-holder">
+            <app-hierarchy [data]="treeData"></app-hierarchy>
+        </div>
+    </div>
+</div>

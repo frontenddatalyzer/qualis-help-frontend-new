@@ -7,10 +7,17 @@
                 </a>
             </li>
             <li>
-                <span id="activeFileName">Instruction Manual</span>
-                <button type="button" class="btn" title="Copy URL">
+                <a [routerLink]="['/products/spc']">
+                    <span>Qualis 4.0 SPC</span>
+                </a>
+            </li>
+            <li>
+                <span id="activeFileName">{{currentDocTxt}}</span>
+                <button type="button" class="btn" title="Copy URL" (click)="copyUrl()">
                     <span class="dl-copy"></span>
-                    <span class="copy-feedback">URL copied!</span>
+                    @if(urlCopied) {
+                        <span class="copy-feedback">URL copied!</span>
+                    }
                 </button>
             </li>
         </ul>

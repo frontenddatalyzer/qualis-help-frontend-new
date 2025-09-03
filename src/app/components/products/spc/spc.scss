@@ -1,0 +1,98 @@
+.document-wrapper {
+    display: flex;
+    min-height: calc(100vh - 322px);
+    justify-content: center;
+    padding: 20px;
+
+    .left-nav {
+        width: 50%;
+        background-color: #fdfdfd;
+        padding: 20px;
+        border: solid 1px #dddddd;
+
+        .hierarchy-holder {
+            margin-left: -20px;
+            margin-top: 20px;
+        }
+    }
+}
+
+.help-tool {
+    border-bottom: solid 1px #dddddd;
+    background-color: #f9fcff;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    > div {
+        display: inline-flex;
+        gap: 10px;
+    }
+
+    .breadcrumb {
+        display: inline-flex;
+        align-items: center;
+        list-style: none;
+
+        li {
+            &:not(:first-child) {
+                position: relative;
+                margin-left: 30px;
+                line-height: 32px;
+
+                &::before {
+                    content: "›";
+                    position: absolute;
+                    top: 0px;
+                    left: -18px;
+                    font-size: 30px;
+                    line-height: 25px;
+                    opacity: 0.3;
+                }
+            }
+
+            a {
+                display: block;
+                color: #ff7200;
+                text-decoration: none;
+                margin-left: 0px !important;
+            }
+
+            .btn {
+                margin-left: 10px;
+            }
+        }
+    }
+    
+    .btn {
+        background-color: #ffffff;
+        border: solid 2px #ff7200;
+        color: #ff7200;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: bold;
+        position: relative;
+        padding: 5px 7px;
+        
+        &:hover {
+            background-color: #ff7200;
+            border: solid 2px #ff7200;
+            color: #ffffff !important;
+        }
+
+        .copy-feedback {
+            position: absolute;
+            top: 3px;
+            left: 81px;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+    }   
+}

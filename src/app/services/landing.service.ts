@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { environment } from '../../environments/environments';
 import { HttpClient } from '@angular/common/http';
-import { catchError } from 'rxjs/operators';
+import { catchError, map, tap } from 'rxjs/operators';
 import { throwError } from 'rxjs';
 
 @Injectable({
@@ -15,7 +15,7 @@ export class LandingService {
   ) {}
 
   getDocumentationNodes() {
-    return this.http.get<any[]>(this.spcEndPoint).pipe(
+    return this.http.get<any>(this.spcEndPoint).pipe(
       catchError(error => {
         console.error('API Error:', error);
         return throwError(() => new Error('Failed to fetch documentation'));

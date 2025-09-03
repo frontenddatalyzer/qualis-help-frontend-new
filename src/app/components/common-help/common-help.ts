@@ -30,6 +30,8 @@ export class CommonHelp implements OnInit, AfterViewInit {
 
   searchTerm = '';
   currentDocId: number | null = null;
+  currentDocTxt!: string;
+  urlCopied: boolean = false;
 
   constructor(
     private http: HttpClient,
@@ -62,7 +64,10 @@ export class CommonHelp implements OnInit, AfterViewInit {
       .subscribe({
         next: (res) => {
           const treeData = res?.data?.[0]?.children ?? [];
-          this.treeData = treeData;
+          
+          // Keep only items where showTree === true
+          const filteredTreeData = treeData.filter((item: any) => item.showTree);
+          this.treeData = filteredTreeData;
         },
         error: (err) => {
           console.error('Error fetching SPC data:', err);
@@ -152,6 +157,7 @@ export class CommonHelp implements OnInit, AfterViewInit {
         if (foundDoc) {
           this.tocNav = foundDoc?.navigation;
           this.documentContent = foundDoc?.content || '';
+          this.currentDocTxt = foundDoc?.text;
         } else {
           this.documentContent = '<p>Document not found.</p>';
         }
@@ -235,5 +241,18 @@ export class CommonHelp implements OnInit, AfterViewInit {
 
   private escapeRegex(text: string) {
     return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  copyUrl() {
+    const url = window.location.href;
+
+    navigator.clipboard.writeText(url).then(() => {
+      this.urlCopied = true;
+
+      // Hide feedback after 2s
+      setTimeout(() => this.urlCopied = false, 2000);
+    }).catch(err => {
+      console.error('Failed to copy:', err);
+    });
   }
 }

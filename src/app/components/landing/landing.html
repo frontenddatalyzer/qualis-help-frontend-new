@@ -22,14 +22,18 @@
         </form>
         
         <!-- Search Results -->
-        <div *ngIf="searchResults.length > 0" class="search-results">
-            <div *ngFor="let doc of searchResults" class="result-item">
-                <a [routerLink]="['/products/spc', doc.id]" [queryParams]="{ q: search }">
-                    <h5>{{ doc.text }}</h5>
-                    <p [innerHTML]="doc.snippet"></p>
-                </a>
-            </div>
-        </div>
+         @if(searchResults.length > 0) {
+             <div class="search-results">
+                @for (doc of searchResults; track $index) {
+                    <div class="result-item">
+                        <a [routerLink]="['/products/spc', doc.id]" [queryParams]="{ q: search }">
+                            <h5>{{ doc.text }}</h5>
+                            <p [innerHTML]="doc.snippet"></p>
+                        </a>
+                    </div>
+                }
+             </div>
+         }
     </div>
 
     <div class="action-holder">
