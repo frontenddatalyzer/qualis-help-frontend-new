@@ -1,5 +1,5 @@
-import { CommonModule, Location } from '@angular/common';
-import { AfterViewInit, Component, HostListener, NgZone, OnInit } from '@angular/core';
+import { CommonModule, Location, isPlatformBrowser } from '@angular/common';
+import { AfterViewInit, Component, HostListener, NgZone, OnInit, Inject, PLATFORM_ID } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Hierarchy } from '../hierarchy/hierarchy';
 import { environment } from '../../../environments/environments';
@@ -38,7 +38,8 @@ export class CommonHelp implements OnInit, AfterViewInit {
     private activatedRoute: ActivatedRoute,
     private sanitizer: DomSanitizer,
     private ngZone: NgZone,
-    private location: Location
+    private location: Location,
+    @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
   ngOnInit() {
@@ -116,6 +117,7 @@ export class CommonHelp implements OnInit, AfterViewInit {
       return;
     }
 
+    const backendUrl = 'https://helpbackend.qualis40.io';
     const renderer = new marked.Renderer();
 
     renderer.heading = ({ tokens, depth }) => {
@@ -136,8 +138,22 @@ export class CommonHelp implements OnInit, AfterViewInit {
       return `<h${depth} id="${id}">${text}</h${depth}>`;
     };
 
+    // Image fix (object params, not 3 args)
+    renderer.image = ({ href, title, text }) => {
+      if (href?.startsWith('http://localhost:1337')) {
+        href = href.replace('http://localhost:1337', backendUrl);
+      }
+      return `<img src="${href}" alt="${text || ''}" ${title ? `title="${title}"` : ''} />`;
+    };
+
     // Synchronous conversion (we call marked synchronously here)
-    const rawHtml = marked(markdown, { renderer }) as string;
+    // const rawHtml = marked(markdown, { renderer }) as string;
+    // Convert markdown to raw HTML
+    let rawHtml = marked(markdown, { renderer }) as string;
+
+    // Replace Strapi localhost URLs with public backend URL
+    
+    rawHtml = rawHtml.replace(/http:\/\/localhost:1337/g, backendUrl);
 
     // Allow <mark> tag so highlights are preserved
     const clean = DOMPurifyInstance
@@ -193,22 +209,30 @@ export class CommonHelp implements OnInit, AfterViewInit {
   }
 
   private updateAnchorHrefFromMarkdownHtml() {
-    const markdownContainer = document.querySelector('.document-viewer');
+    if (!isPlatformBrowser(this.platformId)) {
+      // Skip on server (no DOM available)
+      return;
+    }
 
-    if (markdownContainer) {
-      const anchors = markdownContainer.querySelectorAll<HTMLAnchorElement>('a[href^="#"]');
-      const baseUrl = window.location.origin + this.location.path();
+    const anchors = document.querySelectorAll('a[href^="#"]');
 
-      anchors.forEach(anchor => {
-        const hash = anchor.getAttribute('href');
-        if (hash) {
-          anchor.setAttribute('href', `${baseUrl}${hash}`);
+    anchors.forEach(anchor => {
+      anchor.addEventListener('click', (event) => {
+        event.preventDefault();
+        const id = anchor.getAttribute('href')!.substring(1);
+        const target = document.getElementById(id);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth' });
         }
       });
-    }
+    });
   }
 
   private scrollToFirstMatch() {
+    if (!isPlatformBrowser(this.platformId)) {
+      return; // skip in SSR
+    }
+
     // Query inside the document-viewer container only
     const container = document.querySelector('.document-viewer');
     if (!container) return;
