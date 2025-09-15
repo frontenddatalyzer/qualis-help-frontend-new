@@ -39,7 +39,7 @@ export class CommonHelp implements OnInit, AfterViewInit {
     private sanitizer: DomSanitizer,
     private ngZone: NgZone,
     private location: Location,
-    @Inject(PLATFORM_ID) private platformId: Object
+    @Inject(PLATFORM_ID) private platformId: Object,
   ) {}
 
   ngOnInit() {

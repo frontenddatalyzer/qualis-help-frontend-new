@@ -1,24 +1,34 @@
 <ul class="tree-list">
-  <li *ngFor="let node of data">
-    <div class="tree-item">
-      <span *ngIf="isFolder(node)" class="folder-icon">
-        <span class="dl-folder-open"></span>
-      </span>
-      <span *ngIf="isDocument(node)" class="doc-icon">
-        <span class="dl-document"></span>
-      </span>
-
-      <span *ngIf="isFolder(node)">{{ node.text }}</span>
-      <a *ngIf="isDocument(node)" [class.selected]="node.id === selectedId" [routerLink]="['/products/spc', node.id]">
-        <span>{{ node.text }}</span>
-      </a>
-    </div>
-
-    <!-- Recursive tree for children -->
-    <app-hierarchy
-      *ngIf="isFolder(node)"
-      [data]="node.children"
-    >
-    </app-hierarchy>
-  </li>
+  @for(node of data; track $index) {
+    <li>
+      <div class="tree-item">
+        <!-- Folder -->
+        <ng-container *ngIf="isFolder(node)">
+          <span class="folder-icon" (click)="toggleFolder(node)">
+            <span [ngClass]="node.expanded ? 'dl-folder-open' : 'dl-folder-close'"></span>
+          </span>
+          <span (click)="toggleFolder(node)">{{ node.text }}</span>
+        </ng-container>
+        
+        <!-- Document -->
+        <ng-container *ngIf="isDocument(node)">
+          <span class="doc-icon">
+            <span class="dl-document"></span>
+          </span>
+          <a [class.selected]="node.id === selectedId"
+             [routerLink]="['/products/spc', node.id]">
+            <span>{{ node.text }}</span>
+          </a>
+        </ng-container>
+      </div>
+  
+      <!-- Recursive tree for children -->
+       @if(isFolder(node) && node.expanded) {
+         <app-hierarchy
+           [data]="node.children"
+         >
+         </app-hierarchy>
+       }
+    </li>
+  }
 </ul>
