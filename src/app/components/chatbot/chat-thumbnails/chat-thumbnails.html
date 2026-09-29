@@ -1,0 +1,12 @@
+@if (visible().length) {
+<div class="thumbs" [class.single]="visible().length === 1">
+    @for (item of visible(); track $index) {
+    <button type="button" class="thumb" [class.highlight]="highlight() === item.sourceIndex"
+        (click)="onOpen($index, $event)" [attr.aria-label]="'Enlarge: ' + item.caption" [title]="item.caption">
+        <img [src]="item.url" [alt]="item.caption" loading="lazy" decoding="async" width="320" height="180"
+            (error)="markBroken(item.url)" />
+        <span class="badge" aria-hidden="true">[{{ item.sourceIndex }}]</span>
+    </button>
+    }
+</div>
+}

@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { Header } from './components/header/header';
 import { Footer } from './components/footer/footer';
+import { Chatbot } from './components/chatbot/chatbot';
 import { ViewportScroller } from '@angular/common';
 
 @Component({
@@ -9,7 +10,8 @@ import { ViewportScroller } from '@angular/common';
   imports: [
     RouterOutlet,
     Header,
-    Footer
+    Footer,
+    Chatbot
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss'

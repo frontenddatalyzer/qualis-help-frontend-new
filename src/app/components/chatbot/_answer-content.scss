@@ -1,0 +1,122 @@
+// Markdown answers in the chatbot. They are injected via [innerHTML], so they live in
+// global styles (scoped to app-chatbot) instead of the component stylesheet.
+$brand: #ff7200;
+$text-muted: #7b7b7b;
+
+// Answers arrive as several markdown segments with screenshots between them; keep the text
+// flowing like one document (a list split across segments continues via <ol start="n">)
+app-chatbot .answer-content + .answer-content {
+    margin-top: 8px;
+}
+
+app-chatbot .answer-content {
+    overflow-wrap: anywhere;
+
+    > :first-child {
+        margin-top: 0;
+    }
+
+    > :last-child {
+        margin-bottom: 0;
+    }
+
+    p,
+    ul,
+    ol,
+    pre,
+    table,
+    blockquote {
+        margin: 0 0 10px;
+    }
+
+    ul,
+    ol {
+        padding-left: 20px;
+    }
+
+    li + li {
+        margin-top: 4px;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4 {
+        margin: 12px 0 6px;
+        font-size: 15px;
+        font-weight: 700;
+    }
+
+    a {
+        color: $brand;
+    }
+
+    code {
+        padding: 1px 5px;
+        border-radius: 4px;
+        background: #f4f4f5;
+        font-size: 12.5px;
+    }
+
+    pre {
+        padding: 10px 12px;
+        border-radius: 8px;
+        background: #f4f4f5;
+        overflow-x: auto;
+
+        code {
+            padding: 0;
+            background: none;
+        }
+    }
+
+    table {
+        display: block;
+        max-width: 100%;
+        overflow-x: auto;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+
+    th,
+    td {
+        padding: 5px 8px;
+        border: 1px solid #e5e7eb;
+        text-align: left;
+    }
+
+    th {
+        background: #fafafa;
+    }
+
+    blockquote {
+        padding-left: 10px;
+        border-left: 3px solid #e5e7eb;
+        color: $text-muted;
+    }
+
+    sup.cite {
+        margin-left: 1px;
+        line-height: 0;
+    }
+
+    .cite-ref {
+        display: inline-block;
+        min-width: 16px;
+        margin: 0 1px;
+        padding: 0 4px;
+        border-radius: 8px;
+        background: rgba(255, 114, 0, 0.12);
+        color: $brand;
+        font-size: 10.5px;
+        font-weight: 700;
+        line-height: 16px;
+        text-align: center;
+        text-decoration: none;
+    }
+
+    a.cite-ref:hover {
+        background: $brand;
+        color: #ffffff;
+    }
+}

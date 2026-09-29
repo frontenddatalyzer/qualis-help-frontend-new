@@ -1,0 +1,162 @@
+@if (isOpen()) {
+<div class="chat-popup" role="dialog" aria-label="Chat">
+    @if (hasConversation()) {
+    <div class="chat-topbar">
+        <svg class="topbar-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+            <path d="M12 2c.4 4.6 2.4 7.6 7 8.2l3 .3-3 .3c-4.6.6-6.6 3.6-7 8.2l-.3 3-.3-3c-.4-4.6-2.4-7.6-7-8.2l-3-.3 3-.3c4.6-.6 6.6-3.6 7-8.2l.3-3z" />
+        </svg>
+        <span class="topbar-title">Help assistant</span>
+        <button type="button" class="new-chat-btn" (click)="newChat()" [disabled]="loading()" title="Start a new conversation">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 5v14M5 12h14" />
+            </svg>
+            New chat
+        </button>
+    </div>
+    } @else {
+    <div class="chat-header">
+        <svg class="greeting-icon" viewBox="0 0 24 24" width="32" height="32" fill="currentColor" aria-hidden="true">
+            <path d="M12 2c.4 4.6 2.4 7.6 7 8.2l3 .3-3 .3c-4.6.6-6.6 3.6-7 8.2l-.3 3-.3-3c-.4-4.6-2.4-7.6-7-8.2l-3-.3 3-.3c4.6-.6 6.6-3.6 7-8.2l.3-3z" />
+        </svg>
+        <h2 class="greeting">
+            <span class="greeting-hi">Hi there 👋</span>
+            <span class="greeting-ask">How can we help you?</span>
+        </h2>
+    </div>
+    }
+
+    <div class="chat-body" #chatBody aria-live="polite">
+        @if (restoring()) {
+        <div class="restoring">Loading conversation…</div>
+        }
+
+        @for (msg of messages(); track msg.id) {
+        <div class="bubble user">{{ msg.question }}</div>
+
+        <div class="answer">
+            @if (showStandalone(msg)) {
+            <div class="searched-for">Searched for: {{ msg.standaloneQuestion }}</div>
+            }
+
+            <div class="answer-body" (mouseover)="onCiteHover(msg, $event)" (mouseout)="clearCiteHover()"
+                (focusin)="onCiteHover(msg, $event)" (focusout)="clearCiteHover()">
+                @for (block of msg.blocks; track $index) {
+                @if (block.kind === 'markdown') {
+                <div class="answer-content" [innerHTML]="block.html"></div>
+                } @else {
+                <app-chat-screenshot [item]="block.item" [highlight]="highlightFor(msg) === block.item.sourceIndex"
+                    (open)="openInlineImage(msg, block.item, $event)" (broken)="markImageBroken($event)" />
+                }
+                }
+            </div>
+
+            @if (msg.extraImages.length) {
+            <details class="more-shots">
+                <summary>More screenshots ({{ msg.extraImages.length }})</summary>
+                <app-chat-thumbnails [items]="msg.extraImages" [highlight]="highlightFor(msg)" (open)="openLightbox($event)" />
+            </details>
+            }
+
+            @if (statusHints[msg.status]; as hint) {
+            <div class="status-hint" [class.warn]="msg.status === 'ungrounded' || msg.status === 'truncated'">
+                {{ hint }}
+            </div>
+            }
+
+            @if (msg.citations.length) {
+            <div class="sources">
+                <div class="sources-label">Sources</div>
+                <ol>
+                    @for (src of msg.citations; track src.chunk_id) {
+                    <li>
+                        <span class="src-index">{{ src.index }}</span>
+                        <div class="src-text">
+                            @if (isSafeUrl(src.url)) {
+                            <a [href]="src.url" target="_blank" rel="noopener noreferrer" class="src-title">{{ src.title }}</a>
+                            } @else {
+                            <span class="src-title">{{ src.title }}</span>
+                            }
+                            @if (src.section) {
+                            <span class="src-section">{{ src.section }}</span>
+                            }
+                            @if (src.versions.length) {
+                            <span class="src-versions">
+                                @for (v of src.versions; track v) {
+                                <span class="version">v{{ v }}</span>
+                                }
+                            </span>
+                            }
+                        </div>
+                    </li>
+                    }
+                </ol>
+            </div>
+            }
+
+            <div class="answer-actions">
+                <button type="button" class="icon-btn" (click)="copyAnswer(msg)" [title]="copiedId() === msg.id ? 'Copied' : 'Copy answer'">
+                    @if (copiedId() === msg.id) {
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                    Copied
+                    } @else {
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="9" y="9" width="12" height="12" rx="2" />
+                        <path d="M5 15V5a2 2 0 0 1 2-2h10" />
+                    </svg>
+                    Copy
+                    }
+                </button>
+                @if (msg.latencyMs !== null) {
+                <span class="latency" [title]="latencyTooltip(msg)">{{ formatLatency(msg.latencyMs) }}</span>
+                }
+            </div>
+        </div>
+        }
+
+        @if (pendingQuestion(); as pending) {
+        <div class="bubble user">{{ pending }}</div>
+        <div class="typing" role="status" aria-label="Assistant is typing">
+            <span></span><span></span><span></span>
+        </div>
+        }
+
+        @if (error(); as err) {
+        <div class="chat-error" role="alert">
+            <span>{{ err.message }}</span>
+            <button type="button" class="retry-btn" (click)="retry()" [disabled]="loading()">Retry</button>
+        </div>
+        }
+    </div>
+
+    <div class="chat-footer">
+        <form class="chat-input" (ngSubmit)="send()">
+            <input #chatInput type="text" name="message" [(ngModel)]="message" [disabled]="loading()" (keydown.enter)="$event.preventDefault(); send()"
+                [attr.maxlength]="maxLength" [placeholder]="loading() ? 'Waiting for the answer…' : 'Ask a question...'"
+                autocomplete="off" />
+            <button type="submit" class="send-btn" [disabled]="loading() || !message.trim()" aria-label="Send">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                    <path d="M3.4 20.4 21 12 3.4 3.6 3.4 10.1 15 12 3.4 13.9z" />
+                </svg>
+            </button>
+        </form>
+    </div>
+</div>
+}
+
+@if (lightboxItems(); as items) {
+<app-chat-lightbox [items]="items" [(index)]="lightboxIndex" (closed)="closeLightbox()" />
+}
+
+<button class="chat-toggle" [class.open]="isOpen()" (click)="toggle()" [attr.aria-label]="isOpen() ? 'Close chat' : 'Open chat'">
+    @if (isOpen()) {
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 9l6 6 6-6" />
+    </svg>
+    } @else {
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+        <path d="M12 3C6.5 3 2 6.9 2 11.7c0 2.6 1.3 4.9 3.4 6.5L4.6 22l4.1-2.2c1 .3 2.1.4 3.3.4 5.5 0 10-3.9 10-8.6S17.5 3 12 3z" />
+    </svg>
+    }
+</button>

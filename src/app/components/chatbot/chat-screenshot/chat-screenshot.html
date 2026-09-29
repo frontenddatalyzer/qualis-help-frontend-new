@@ -1,0 +1,11 @@
+@if (!failed()) {
+<figure class="shot" [class.highlight]="highlight()">
+    <button type="button" class="shot-btn" [class.loaded]="naturalWidth() !== null"
+        [style.max-width.px]="naturalWidth() === null ? null : naturalWidth()! + 2" (click)="open.emit($any($event.currentTarget))"
+        [attr.aria-label]="'Enlarge: ' + item().caption">
+        <img [src]="item().url" [alt]="item().caption" loading="lazy" decoding="async" width="640" height="400"
+            (load)="onLoad($event)" (error)="onError()" />
+    </button>
+    <figcaption>{{ item().caption }}</figcaption>
+</figure>
+}

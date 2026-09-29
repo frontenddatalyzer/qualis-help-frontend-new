@@ -1,0 +1,57 @@
+@let item = current();
+<div class="backdrop" (click)="close()">
+    <div #dialog class="dialog" role="dialog" aria-modal="true" [attr.aria-label]="item.caption" (click)="$event.stopPropagation()">
+        <div class="toolbar">
+            <span class="counter">
+                @if (items().length > 1) { {{ index() + 1 }} / {{ items().length }} }
+            </span>
+            <button #closeBtn type="button" class="tool-btn" (click)="close()" aria-label="Close">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                    <path d="M6 6l12 12M18 6 6 18" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="stage">
+            @if (items().length > 1) {
+            <button type="button" class="nav-btn prev" (click)="prev()" aria-label="Previous screenshot">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M15 6l-6 6 6 6" />
+                </svg>
+            </button>
+            }
+
+            @if (failedUrl() !== item.url) {
+            <img [src]="item.url" [alt]="item.caption" decoding="async" (error)="failedUrl.set(item.url)" />
+            } @else {
+            <div class="img-failed">This screenshot couldn't be loaded.</div>
+            }
+
+            @if (items().length > 1) {
+            <button type="button" class="nav-btn next" (click)="next()" aria-label="Next screenshot">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M9 6l6 6-6 6" />
+                </svg>
+            </button>
+            }
+        </div>
+
+        <div class="caption">
+            <p class="caption-text">{{ item.caption }}</p>
+            @if (item.sourceTitle) {
+            <p class="caption-source">
+                <span class="src-num">[{{ item.sourceIndex }}]</span>
+                {{ item.sourceTitle }}@if (item.sourceSection) { — {{ item.sourceSection }} }
+            </p>
+            }
+            @if (item.sourceUrl) {
+            <a class="open-link" [href]="item.sourceUrl" target="_blank" rel="noopener noreferrer">
+                Open source page
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+                </svg>
+            </a>
+            }
+        </div>
+    </div>
+</div>
