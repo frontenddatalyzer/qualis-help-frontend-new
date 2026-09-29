@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "ng-serve-5173",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["ng", "serve", "--port", "5173"],
+      "port": 5173
+    }
+  ]
+}
