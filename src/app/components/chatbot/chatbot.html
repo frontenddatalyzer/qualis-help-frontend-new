@@ -6,7 +6,7 @@
             <path d="M12 2c.4 4.6 2.4 7.6 7 8.2l3 .3-3 .3c-4.6.6-6.6 3.6-7 8.2l-.3 3-.3-3c-.4-4.6-2.4-7.6-7-8.2l-3-.3 3-.3c4.6-.6 6.6-3.6 7-8.2l.3-3z" />
         </svg>
         <span class="topbar-title">Help assistant</span>
-        <button type="button" class="new-chat-btn" (click)="newChat()" [disabled]="loading()" title="Start a new conversation">
+        <button type="button" class="new-chat-btn" (click)="newChat()" title="Start a new conversation">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M12 5v14M5 12h14" />
             </svg>
@@ -34,26 +34,17 @@
         <div class="bubble user">{{ msg.question }}</div>
 
         <div class="answer">
-            @if (showStandalone(msg)) {
+            @if (showStandalone(msg.question, msg.standaloneQuestion)) {
             <div class="searched-for">Searched for: {{ msg.standaloneQuestion }}</div>
             }
 
-            <div class="answer-body" (mouseover)="onCiteHover(msg, $event)" (mouseout)="clearCiteHover()"
-                (focusin)="onCiteHover(msg, $event)" (focusout)="clearCiteHover()">
-                @for (block of msg.blocks; track $index) {
-                @if (block.kind === 'markdown') {
-                <div class="answer-content" [innerHTML]="block.html"></div>
-                } @else {
-                <app-chat-screenshot [item]="block.item" [highlight]="highlightFor(msg) === block.item.sourceIndex"
-                    (open)="openInlineImage(msg, block.item, $event)" (broken)="markImageBroken($event)" />
-                }
-                }
-            </div>
+            <ng-container
+                *ngTemplateOutlet="answerBlocks; context: { blocks: msg.blocks, images: msg.inlineImages, id: msg.id }" />
 
             @if (msg.extraImages.length) {
             <details class="more-shots">
                 <summary>More screenshots ({{ msg.extraImages.length }})</summary>
-                <app-chat-thumbnails [items]="msg.extraImages" [highlight]="highlightFor(msg)" (open)="openLightbox($event)" />
+                <app-chat-thumbnails [items]="msg.extraImages" [highlight]="highlightFor(msg.id)" (open)="openLightbox($event)" />
             </details>
             }
 
@@ -115,11 +106,32 @@
         </div>
         }
 
-        @if (pendingQuestion(); as pending) {
-        <div class="bubble user">{{ pending }}</div>
-        <div class="typing" role="status" aria-label="Assistant is typing">
-            <span></span><span></span><span></span>
+        @if (streamView(); as sv) {
+        <div class="bubble user">{{ sv.question }}</div>
+
+        @if (sv.blocks.length || showStandalone(sv.question, sv.standaloneQuestion)) {
+        <div class="answer" [attr.aria-busy]="!sv.interrupted">
+            @if (showStandalone(sv.question, sv.standaloneQuestion)) {
+            <div class="searched-for">Searched for: {{ sv.standaloneQuestion }}</div>
+            }
+            <ng-container
+                *ngTemplateOutlet="answerBlocks; context: { blocks: sv.blocks, images: sv.inlineImages, id: streamId }" />
         </div>
+        }
+
+        <!-- Stage text until the first word is shown, then just the pulsing sparkle while writing -->
+        @if (!sv.interrupted) {
+        <div class="thinking" role="status" aria-live="polite">
+            <svg class="thinking-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+                <path d="M12 2c.4 4.6 2.4 7.6 7 8.2l3 .3-3 .3c-4.6.6-6.6 3.6-7 8.2l-.3 3-.3-3c-.4-4.6-2.4-7.6-7-8.2l-3-.3 3-.3c4.6-.6 6.6-3.6 7-8.2l.3-3z" />
+            </svg>
+            @if (!sv.blocks.length) {
+            @for (label of [stageLabel()]; track label) {
+            <span class="thinking-text">{{ label }}</span>
+            }
+            }
+        </div>
+        }
         }
 
         @if (error(); as err) {
@@ -144,6 +156,21 @@
     </div>
 </div>
 }
+
+<!-- Answer text + inline screenshots; shared by finished and streaming answers -->
+<ng-template #answerBlocks let-blocks="blocks" let-images="images" let-id="id">
+    <div class="answer-body" (mouseover)="onCiteHover(id, $event)" (mouseout)="clearCiteHover()"
+        (focusin)="onCiteHover(id, $event)" (focusout)="clearCiteHover()">
+        @for (block of blocks; track $index) {
+        @if (block.kind === 'markdown') {
+        <div class="answer-content" [innerHTML]="block.html"></div>
+        } @else {
+        <app-chat-screenshot [item]="block.item" [highlight]="highlightFor(id) === block.item.sourceIndex"
+            (open)="openInlineImage(images, block.item, $event)" (broken)="markImageBroken($event)" />
+        }
+        }
+    </div>
+</ng-template>
 
 @if (lightboxItems(); as items) {
 <app-chat-lightbox [items]="items" [(index)]="lightboxIndex" (closed)="closeLightbox()" />
