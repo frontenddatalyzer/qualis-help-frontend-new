@@ -1,0 +1,59 @@
+$normal: #3b82f6;
+$warning: #f59e0b;
+$danger: #ef4444;
+
+:host {
+    display: inline-flex;
+    flex-shrink: 0;
+}
+
+.usage-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 32px;
+    padding: 0 8px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: #4a4a4a;
+    cursor: pointer;
+
+    &:hover,
+    &[aria-expanded='true'] {
+        background: rgba(0, 0, 0, 0.06);
+    }
+
+    &:focus-visible {
+        outline: 2px solid #ff7200;
+        outline-offset: 1px;
+    }
+}
+
+circle {
+    fill: none;
+    stroke-width: 2.5;
+}
+
+.track {
+    stroke: rgba(0, 0, 0, 0.15);
+}
+
+.progress {
+    stroke: $normal;
+    stroke-linecap: round;
+    transform: rotate(-90deg); // start at 12 o'clock
+    transform-origin: center;
+    transition: stroke-dashoffset 0.3s ease;
+}
+
+.warning .progress {
+    stroke: $warning;
+}
+
+.danger .progress {
+    stroke: $danger;
+}

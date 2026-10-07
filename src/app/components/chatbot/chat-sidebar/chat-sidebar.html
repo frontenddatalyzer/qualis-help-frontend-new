@@ -1,0 +1,75 @@
+<div class="backdrop" (click)="closed.emit()"></div>
+
+<nav class="panel" aria-label="Chat history">
+    <div class="top">
+        <button type="button" class="icon-btn collapse" (click)="closed.emit()" aria-label="Hide chat history"
+            title="Hide chat history" aria-expanded="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="16" rx="2.5" />
+                <path d="M9 4v16" />
+            </svg>
+        </button>
+        <button type="button" class="icon-btn new-chat" (click)="newChat.emit()" aria-label="New chat" title="New chat">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 5v14M5 12h14" />
+            </svg>
+        </button>
+    </div>
+
+    <div class="list">
+        @if (note(); as text) {
+        <div class="note" role="status">{{ text }}</div>
+        }
+
+        @if (store.loadFailed() && !store.conversations().length) {
+        <div class="empty">
+            Couldn't load your chats.
+            <button type="button" class="link" (click)="retryLoad()">Retry</button>
+        </div>
+        } @else if (store.loaded() && !store.conversations().length) {
+        <div class="empty">No chats yet</div>
+        }
+
+        @for (group of groups(); track group.label) {
+        <div class="group-label">{{ group.label }}</div>
+        <ul>
+            @for (chat of group.items; track chat.conversation_id) {
+            @let id = chat.conversation_id;
+            <li class="row" [class.active]="id === activeId()" [class.menu-open]="menuFor() === id"
+                [class.busy]="busy() === id">
+                @if (renaming() === id) {
+                <input #field class="rename-input" type="text" [value]="chat.title" [attr.maxlength]="titleMaxLength"
+                    aria-label="Chat title" (keydown.enter)="commitRename(chat, field.value)"
+                    (keydown.escape)="$event.stopPropagation(); cancelRename()" (blur)="commitRename(chat, field.value)" />
+                } @else if (confirmingDelete() === id) {
+                <div class="confirm" (click)="$event.stopPropagation()">
+                    <span>Delete this chat?</span>
+                    <button type="button" class="danger" (click)="confirmDelete(id)">Delete</button>
+                    <button type="button" class="link" (click)="confirmingDelete.set(null)">Cancel</button>
+                </div>
+                } @else {
+                <button type="button" class="title" (click)="select(chat)" [title]="chat.title"
+                    [attr.aria-current]="id === activeId() ? 'true' : null">{{ chat.title || 'Untitled chat' }}</button>
+                <button type="button" class="icon-btn more" (click)="toggleMenu(id, $event)" aria-label="Chat options"
+                    aria-haspopup="menu" [attr.aria-expanded]="menuFor() === id">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+                        <circle cx="5" cy="12" r="1.8" />
+                        <circle cx="12" cy="12" r="1.8" />
+                        <circle cx="19" cy="12" r="1.8" />
+                    </svg>
+                </button>
+                @if (menuFor() === id) {
+                <div class="menu" role="menu" (click)="$event.stopPropagation()">
+                    <button type="button" role="menuitem" (click)="startRename(id)">Rename</button>
+                    <button type="button" role="menuitem" class="danger-text" (click)="askDelete(id)">Delete</button>
+                </div>
+                }
+                }
+            </li>
+            }
+        </ul>
+        }
+    </div>
+
+    <div class="retention">Chats are kept for 30 days.</div>
+</nav>

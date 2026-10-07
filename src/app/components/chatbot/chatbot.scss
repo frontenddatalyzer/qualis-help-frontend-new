@@ -3,14 +3,20 @@ $text-dark: #1a1a1a;
 $text-muted: #7b7b7b;
 $border: rgba(0, 0, 0, 0.08);
 
-// Launcher — 48px, 20px from the corner (same as the reference widget)
+// Launcher is kept above the footer; it hides while the chat is open
+$launcher-bottom: 170px;
+$launcher-size: 48px;
+// The open chat is a full-height panel with this margin to the window edges
+$popup-margin: 12px;
+
+// Launcher — 48px, 20px from the right edge
 .chat-toggle {
     position: fixed;
     right: 20px;
-    bottom: 170px;
+    bottom: $launcher-bottom;
     z-index: 1000;
-    width: 48px;
-    height: 48px;
+    width: $launcher-size;
+    height: $launcher-size;
     border: none;
     border-radius: 50%;
     background: $brand;
@@ -25,35 +31,101 @@ $border: rgba(0, 0, 0, 0.08);
     &:hover {
         transform: scale(1.08);
     }
-
-    // When the popup is open the launcher turns into a white chevron button
-    &.open {
-        background: #ffffff;
-        color: $text-dark;
-    }
 }
 
-// Popup — 400 x 704, sits 84px from the bottom (launcher + 16px gap)
+// Open chat — a full-height panel on the right, independent of the launcher position, so short
+// (laptop) screens still get a tall reading area. It may overlap the site header and footer.
 .chat-popup {
     position: fixed;
-    right: 20px;
-    bottom: 234px;
-    z-index: 1000;
-    width: 500px;
-    height: min(800px, calc(100vh - 104px));
+    top: $popup-margin;
+    right: $popup-margin;
+    bottom: $popup-margin;
+    z-index: 10000;
+    // --chat-width is set while/after dragging the resize handle (360–750px)
+    width: min(var(--chat-width, 500px), calc(100vw - #{2 * $popup-margin}));
     background: #ffffff;
     border-radius: 16px;
     box-shadow: 0 5px 40px rgba(0, 0, 0, 0.16);
-    display: flex;
-    flex-direction: column;
+    display: flex; // [history sidebar][chat]
     overflow: hidden;
     transform-origin: bottom right;
     animation: chat-open 0.25s cubic-bezier(0.2, 0.9, 0.3, 1);
+    // The sidebar docks or becomes a drawer depending on this panel's width (see chat-sidebar.scss)
+    container: chat / inline-size;
+}
+
+.chat-main {
+    position: relative; // the usage panel is positioned in this column
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+// While the sidebar is docked and showing, it carries its own hide button and "New chat":
+// the chat's "show history" button and the top-bar "New chat" are only needed when it isn't
+@container chat (min-width: 640px) {
+    .chat-popup:not(.sidebar-collapsed) .minimize-btn.sidebar-btn,
+    .chat-popup:not(.sidebar-collapsed) .chat-topbar .new-chat-btn {
+        display: none;
+    }
+}
+
+// Invisible strip on the left edge; shows an orange bar on hover / focus / drag
+.resize-handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    // above everything inside the panel, including the history drawer (z-index 6), so the edge
+    // can always be dragged
+    z-index: 10;
+    width: 8px;
+    cursor: ew-resize;
+    touch-action: none;
+
+    &::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 2px;
+        width: 3px;
+        height: 40px;
+        border-radius: 2px;
+        background: $brand;
+        opacity: 0;
+        transform: translateY(-50%);
+        transition: opacity 0.15s ease;
+    }
+
+    &:hover::after,
+    &:focus-visible::after {
+        opacity: 0.6;
+    }
+
+    &:focus-visible {
+        outline: none;
+    }
+}
+
+.chat-popup.resizing {
+    user-select: none;
+
+    .resize-handle::after {
+        opacity: 1;
+    }
 }
 
 .chat-header {
-    padding: 32px 24px 24px;
-    background: linear-gradient(180deg, rgba(255, 114, 0, 0.08) 0%, rgba(255, 114, 0, 0) 100%);
+    position: relative; // for the corner buttons
+    padding: 60px 24px 24px; // room for the history button in the top-left corner
+
+    .sidebar-btn {
+        position: absolute;
+        top: 16px;
+        left: 16px;
+    }
+    background: linear-gradient(180deg, rgba(255, 114, 0, 0.12) 0%, rgba(255, 114, 0, 0) 100%);
 }
 
 .greeting-icon {
@@ -82,11 +154,40 @@ $border: rgba(0, 0, 0, 0.08);
 }
 
 // Compact header once a conversation has started
+.minimize-btn {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: $text-dark;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+
+    &:hover {
+        background: rgba(0, 0, 0, 0.06);
+    }
+
+}
+
+// Usage, history and minimize buttons in the corner of the greeting header
+.header-actions {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
 .chat-topbar {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 14px 16px 14px 20px;
+    padding: 14px 16px 14px 12px;
     border-bottom: 1px solid $border;
     background: linear-gradient(180deg, rgba(255, 114, 0, 0.06) 0%, rgba(255, 114, 0, 0) 100%);
 }
@@ -97,6 +198,10 @@ $border: rgba(0, 0, 0, 0.08);
 }
 
 .topbar-title {
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     flex: 1;
     font-size: 15px;
     font-weight: 700;
@@ -195,6 +300,10 @@ $border: rgba(0, 0, 0, 0.08);
 }
 
 .status-hint {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
     margin-top: 10px;
     padding: 6px 10px;
     border-radius: 8px;
@@ -208,94 +317,24 @@ $border: rgba(0, 0, 0, 0.08);
     }
 }
 
-.sources {
-    margin-top: 12px;
-    padding-top: 10px;
-    border-top: 1px solid $border;
-
-    ol {
-        margin: 0;
-        padding: 0;
-        list-style: none;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    li {
-        display: flex;
-        gap: 8px;
-    }
-}
-
-.sources-label {
-    margin-bottom: 8px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: $text-muted;
-}
-
-.src-index {
+.continue-btn {
     flex-shrink: 0;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: rgba(255, 114, 0, 0.12);
-    color: $brand;
-    font-size: 10.5px;
-    font-weight: 700;
-    line-height: 18px;
-    text-align: center;
-}
-
-.src-text {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    font-size: 12.5px;
-    line-height: 1.35;
-}
-
-.src-title {
-    font-weight: 600;
-    color: $text-dark;
-    text-decoration: none;
-    overflow-wrap: anywhere;
-}
-
-a.src-title:hover {
-    color: $brand;
-    text-decoration: underline;
-}
-
-.src-section {
-    color: $text-muted;
-    font-size: 12px;
-    overflow-wrap: anywhere;
-}
-
-.src-versions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-top: 2px;
-}
-
-.version {
-    padding: 0 6px;
+    padding: 4px 12px;
+    border: none;
     border-radius: 6px;
-    background: #f4f4f5;
-    font-size: 11px;
-    color: $text-muted;
+    background: $brand;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
 }
 
+// Copy, feedback votes, latency on the right; the feedback comment box wraps below
 .answer-actions {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
+    gap: 0 6px;
     margin-top: 10px;
 }
 
@@ -317,47 +356,14 @@ a.src-title:hover {
     }
 }
 
-.latency {
-    font-size: 11px;
-    color: #b5b5b5;
-    cursor: default;
-}
-
-// Claude-style "thinking" status: pulsing sparkle + shimmering text, no bubble
-.thinking {
-    align-self: flex-start;
-    display: flex;
-    align-items: center;
+// Tokens and latency, right-aligned in the action row
+.answer-meta {
+    margin-left: auto;
+    display: inline-flex;
     gap: 8px;
-    padding: 4px 2px;
-}
-
-.thinking-icon {
-    flex-shrink: 0;
-    color: $brand;
-    animation: thinking-pulse 1.6s ease-in-out infinite;
-}
-
-.thinking-text {
-    font-size: 14px;
-    font-weight: 500;
-    background: linear-gradient(90deg, $text-muted 0%, $text-muted 35%, $brand 50%, $text-muted 65%, $text-muted 100%);
-    background-size: 250% 100%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    animation: thinking-shimmer 2.2s linear infinite, greeting-in 0.35s ease-out;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .thinking-icon,
-    .thinking-text {
-        animation: none;
-    }
-
-    .thinking-text {
-        color: $text-muted;
-    }
+    font-size: 11px;
+    color: #a0a0a0;
+    cursor: default;
 }
 
 .chat-error {
@@ -462,10 +468,14 @@ a.src-title:hover {
     }
 
     .chat-popup {
-        right: 16px;
-        bottom: 76px;
-        width: calc(100vw - 32px);
-        height: calc(100vh - 92px);
+        top: 8px;
+        right: 8px;
+        bottom: 8px;
+        width: calc(100vw - 16px);
+    }
+
+    .resize-handle {
+        display: none; // full width on phones; nothing to resize
     }
 }
 
@@ -490,30 +500,6 @@ a.src-title:hover {
     to {
         opacity: 1;
         transform: translateY(0);
-    }
-}
-
-@keyframes thinking-pulse {
-
-    0%,
-    100% {
-        opacity: 0.45;
-        transform: scale(0.85) rotate(0deg);
-    }
-
-    50% {
-        opacity: 1;
-        transform: scale(1.1) rotate(45deg);
-    }
-}
-
-@keyframes thinking-shimmer {
-    from {
-        background-position: 100% 0;
-    }
-
-    to {
-        background-position: -150% 0;
     }
 }
 

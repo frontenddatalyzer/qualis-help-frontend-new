@@ -1,0 +1,9 @@
+<svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+    <path d="M12 2c.4 4.6 2.4 7.6 7 8.2l3 .3-3 .3c-4.6.6-6.6 3.6-7 8.2l-.3 3-.3-3c-.4-4.6-2.4-7.6-7-8.2l-3-.3 3-.3c4.6-.6 6.6-3.6 7-8.2l.3-3z" />
+</svg>
+@if (label(); as text) {
+<!-- re-created per label so the fade-in replays when the stage changes -->
+@for (t of [text]; track t) {
+<span class="text">{{ t }}</span>
+}
+}

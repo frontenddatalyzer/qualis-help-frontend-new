@@ -1,0 +1,107 @@
+$brand: #ff7200;
+$text-dark: #1a1a1a;
+$text-muted: #7b7b7b;
+
+// The host adds no box: the buttons sit inline in the answer's action row, and the comment box
+// and note wrap onto their own full-width lines below it (the row is a wrapping flexbox)
+:host {
+    display: contents;
+}
+
+.votes {
+    display: inline-flex;
+    gap: 2px;
+}
+
+.vote {
+    width: 26px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: $text-muted;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+        background: #f4f4f5;
+        color: $text-dark;
+    }
+
+    &.selected {
+        background: rgba(255, 114, 0, 0.12);
+        color: $brand;
+
+        svg {
+            fill: rgba(255, 114, 0, 0.25);
+        }
+    }
+
+    &:disabled {
+        opacity: 0.4;
+        cursor: default;
+    }
+
+    &:focus-visible {
+        outline: 2px solid $brand;
+        outline-offset: 1px;
+    }
+}
+
+.comment,
+.note {
+    order: 10; // after everything else in the action row
+    flex-basis: 100%;
+}
+
+.comment {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    margin-top: 8px;
+
+    textarea {
+        flex: 1;
+        min-width: 0;
+        padding: 8px 10px;
+        border: 1px solid rgba(0, 0, 0, 0.12);
+        border-radius: 8px;
+        font: inherit;
+        font-size: 13px;
+        line-height: 1.4;
+        color: $text-dark;
+        resize: vertical;
+        outline: none;
+
+        &:focus {
+            border-color: rgba(255, 114, 0, 0.6);
+        }
+    }
+}
+
+.send {
+    flex-shrink: 0;
+    padding: 7px 14px;
+    border: none;
+    border-radius: 8px;
+    background: $brand;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:disabled {
+        background: #f2f2f2;
+        color: #b5b5b5;
+        cursor: default;
+    }
+}
+
+.note {
+    margin-top: 6px;
+    font-size: 12px;
+    color: $text-muted;
+}

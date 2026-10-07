@@ -1,0 +1,107 @@
+<div class="panel" role="dialog" aria-label="Token usage" tabindex="-1">
+    <!-- A: context window -->
+    <section>
+        @let ctx = contextMeter();
+        <div class="head">
+            <span class="label">Context window</span>
+            <span class="value">{{ contextValue() }}</span>
+        </div>
+        <div class="bar" [class]="ctx.tone">
+            <div class="fill" [style.width.%]="ctx.width"></div>
+        </div>
+        @if (turnsText(); as turns) {
+        <div class="detail">{{ turns }}</div>
+        }
+    </section>
+
+    <!-- B: usage limits (totals and percentages only) -->
+    <section>
+        <div class="label section-title">Usage limits</div>
+
+        @let chat = chatMeter();
+        <div class="row">
+            <div class="head">
+                <span class="name">This chat</span>
+                <span class="value">
+                    {{ chatTokens() }} tokens
+                    @if (hasLimit()) {
+                    <span class="percent">{{ chat.percentText }}</span>
+                    }
+                </span>
+            </div>
+            @if (hasLimit()) {
+            <div class="bar" [class]="chat.tone">
+                <div class="fill" [style.width.%]="chat.width"></div>
+            </div>
+            }
+        </div>
+
+        @if (user()) {
+        @let month = monthMeter();
+        <div class="row">
+            <div class="head">
+                <span class="name">This month</span>
+                <span class="value">
+                    @if (hasLimit()) {
+                    @if (resetsIn(); as resets) { Resets in {{ resets }} }
+                    <span class="percent">{{ month.percentText }}</span>
+                    } @else {
+                    {{ monthTokens() }} tokens
+                    }
+                </span>
+            </div>
+            @if (hasLimit()) {
+            <div class="bar" [class]="month.tone">
+                <div class="fill" [style.width.%]="month.width"></div>
+            </div>
+            <div class="detail">{{ monthTokens() }} of {{ monthLimit() }} tokens</div>
+            }
+        </div>
+        }
+    </section>
+
+    <button type="button" class="toggle" (click)="toggleBreakdown()" [attr.aria-expanded]="breakdownOpen()"
+        aria-controls="chat-usage-breakdown">
+        <span>{{ breakdownOpen() ? 'Hide detailed breakdown' : 'See detailed breakdown' }}</span>
+        <svg [class.up]="breakdownOpen()" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 9l6 6 6-6" />
+        </svg>
+    </button>
+
+    @if (breakdownOpen()) {
+    <section id="chat-usage-breakdown" class="breakdown">
+        <div class="head">
+            <span class="name">Breakdown</span>
+            @if (modelName(); as name) {
+            <span class="value model" [title]="name">{{ name }}</span>
+            }
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <td></td>
+                    <th scope="col">This chat</th>
+                    @if (user()) {
+                    <th scope="col">This month</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @for (row of breakdown(); track row.label) {
+                <tr>
+                    <th scope="row">{{ row.label }}</th>
+                    <td>{{ row.chat }}</td>
+                    @if (user()) {
+                    <td>{{ row.month }}</td>
+                    }
+                </tr>
+                }
+            </tbody>
+        </table>
+        @if (lastAnswer(); as last) {
+        <div class="detail">{{ last }}</div>
+        }
+    </section>
+    }
+</div>

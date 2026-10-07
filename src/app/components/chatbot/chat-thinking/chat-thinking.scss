@@ -1,0 +1,73 @@
+$brand: #ff7200;
+$text-muted: #7b7b7b;
+
+:host {
+    align-self: flex-start;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 2px;
+}
+
+.icon {
+    flex-shrink: 0;
+    color: $brand;
+    animation: pulse 1.6s ease-in-out infinite;
+}
+
+.text {
+    font-size: 14px;
+    font-weight: 500;
+    background: linear-gradient(90deg, $text-muted 0%, $text-muted 35%, $brand 50%, $text-muted 65%, $text-muted 100%);
+    background-size: 250% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shimmer 2.2s linear infinite, fade-in 0.35s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .icon,
+    .text {
+        animation: none;
+    }
+
+    .text {
+        color: $text-muted;
+    }
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        opacity: 0.45;
+        transform: scale(0.85) rotate(0deg);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.1) rotate(45deg);
+    }
+}
+
+@keyframes shimmer {
+    from {
+        background-position: 100% 0;
+    }
+
+    to {
+        background-position: -150% 0;
+    }
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

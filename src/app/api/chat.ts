@@ -1,4 +1,5 @@
 import { environment } from '../../environments/environments';
+import { getChatUserId } from './chat-user';
 
 // Client for the RAG chatbot backend. All chatbot fetch code lives here.
 
@@ -8,6 +9,8 @@ const BASE_URL = environment.chatApiUrl.replace(/\/+$/, '');
 const REQUEST_TIMEOUT_MS = 180_000;
 // Streams may stay open a long time; give up only when nothing arrives for this long
 const STREAM_IDLE_TIMEOUT_MS = 120_000;
+
+export const FEEDBACK_COMMENT_MAX_LENGTH = 1000;
 
 export type ChatStatus = 'ok' | 'not_in_docs' | 'no_relevant_docs' | 'ungrounded' | 'truncated';
 
@@ -48,8 +51,11 @@ export interface Source {
   images: ChatImage[]; // all screenshots of this source, doc order
 }
 
+export type FeedbackRating = 'up' | 'down';
+
 export interface ChatResponse {
   conversation_id: string;
+  turn_id?: string | null; // identifies this answer for feedback
   question: string;
   standalone_question: string | null;
   answer: string; // whole answer as markdown without images (for copying)
@@ -61,6 +67,62 @@ export interface ChatResponse {
   latency_ms: number;
   images: AnswerImage[]; // screenshots of the cited sources; placed=false ones aren't in segments
   timings?: ChatTimings;
+  usage?: ChatUsage | null;
+}
+
+// --- Token usage ---
+
+export type UsageCost = number | string | null;
+
+export interface TurnUsage {
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+  cost?: UsageCost;
+}
+
+export interface ConversationUsage extends TurnUsage {
+  requests: number;
+  cached_requests: number;
+  percent_of_limit?: number | null; // share of the monthly limit
+}
+
+export interface UserUsage extends TurnUsage {
+  id?: string;
+  month: string;
+  requests: number;
+  cached_requests?: number;
+  percent_of_limit?: number | null;
+}
+
+export interface ContextUsage {
+  used_tokens: number;
+  limit_tokens: number;
+  percent: number;
+  turns: number;
+  max_turns: number;
+}
+
+export interface UsageLimit {
+  monthly_tokens: number | null; // null = no monthly limit
+  month: string;
+  resets_at: string; // ISO time, UTC
+}
+
+export interface ChatUsage {
+  turn: TurnUsage; // the last answer only
+  conversation: ConversationUsage;
+  user: UserUsage | null; // null when no user_id was sent
+  context: ContextUsage;
+  limit?: UsageLimit | null;
+}
+
+// GET /api/usage: the counters before the first answer. `context` then only carries limit_tokens.
+export interface UsageSummary {
+  conversation: ConversationUsage | null;
+  user: UserUsage | null;
+  context: Partial<ContextUsage> | null;
+  limit: UsageLimit | null;
 }
 
 export interface ChatTimings {
@@ -72,11 +134,12 @@ export interface ChatTimings {
 
 // --- Streaming (POST /api/chat/stream, Server-Sent Events) ---
 
-export type StreamStage = 'searching' | 'generating' | 'thinking';
+export type StreamStage = 'searching' | 'generating' | 'thinking' | 'citing';
 
 export interface StreamStartEvent {
   conversation_id: string;
   question: string;
+  turn_id?: string; // sent when continuing an answer
 }
 
 export interface StreamStatusEvent {
@@ -108,6 +171,7 @@ export interface StreamHandlers {
 }
 
 export interface ConversationTurn {
+  id?: string | null; // the turn_id of a restored answer
   question: string;
   standalone_question: string | null;
   answer: string;
@@ -119,8 +183,20 @@ export interface ConversationTurn {
 
 export interface Conversation {
   conversation_id?: string;
+  title?: string;
   turns: ConversationTurn[];
 }
+
+// One row of the chat history (GET /api/conversations); times are Unix seconds
+export interface ConversationSummary {
+  conversation_id: string;
+  title: string;
+  turns: number;
+  created_at: number;
+  updated_at: number;
+}
+
+export const CONVERSATION_TITLE_MAX_LENGTH = 200;
 
 export interface HealthResponse {
   status: string;
@@ -237,9 +313,13 @@ function normalizeTurn(turn: ConversationTurn): ConversationTurn {
 }
 
 function chatBody(question: string, conversationId?: string | null): string {
-  const body: { question: string; conversation_id?: string } = { question };
+  const body: { question: string; conversation_id?: string; user_id?: string } = { question };
   if (conversationId) {
     body.conversation_id = conversationId;
+  }
+  const userId = getChatUserId();
+  if (userId) {
+    body.user_id = userId; // omitted when nobody is signed in
   }
   return JSON.stringify(body);
 }
@@ -289,9 +369,41 @@ function parseFrame(frame: string): { event: string; data: unknown } | null {
  * (the same ChatResponse POST /api/chat returns). Rejects with ChatApiError on HTTP errors, a missing
  * stream, an `error` event or a stream that ends without `done`; a caller abort rejects with the AbortError.
  */
-export async function streamChat(
+export function streamChat(
   question: string,
   conversationId: string | null | undefined,
+  handlers: StreamHandlers,
+  signal?: AbortSignal
+): Promise<ChatResponse> {
+  return streamRequest('/api/chat/stream', chatBody(question, conversationId), handlers, signal);
+}
+
+/**
+ * Continues a cut-off ("truncated") answer. Same events as streamChat: deltas carry only the new text,
+ * and `done` is the complete answer for the same turn. HTTP 409 = this answer can't be continued
+ * (not the latest, or too old); 404 = the conversation expired.
+ */
+export function continueChat(
+  conversationId: string,
+  turnId: string,
+  handlers: StreamHandlers,
+  signal?: AbortSignal
+): Promise<ChatResponse> {
+  const body: { conversation_id: string; turn_id: string; user_id?: string } = {
+    conversation_id: conversationId,
+    turn_id: turnId
+  };
+  const userId = getChatUserId();
+  if (userId) {
+    body.user_id = userId;
+  }
+  return streamRequest('/api/chat/continue/stream', JSON.stringify(body), handlers, signal);
+}
+
+// POSTs `body` and reads the Server-Sent Events response
+async function streamRequest(
+  path: string,
+  body: string,
   handlers: StreamHandlers,
   signal?: AbortSignal
 ): Promise<ChatResponse> {
@@ -311,10 +423,10 @@ export async function streamChat(
     resetIdle();
     let response: Response;
     try {
-      response = await fetch(`${BASE_URL}/api/chat/stream`, {
+      response = await fetch(`${BASE_URL}${path}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
-        body: chatBody(question, conversationId),
+        body,
         signal: controller.signal
       });
     } catch (err) {
@@ -408,6 +520,76 @@ export function getConversation(id: string): Promise<Conversation> {
 
 export async function deleteConversation(id: string): Promise<void> {
   await request<unknown>(`/api/chat/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+
+/** This browser's chats, newest first. Empty when there is no user id (server-side rendering). */
+export async function listConversations(): Promise<ConversationSummary[]> {
+  const userId = getChatUserId();
+  if (!userId) {
+    return [];
+  }
+  const result = await request<{ conversations?: ConversationSummary[] }>(
+    `/api/conversations?${new URLSearchParams({ user_id: userId })}`
+  );
+  return result?.conversations ?? [];
+}
+
+/** Renames a chat (1-200 characters) and resolves with the title the backend stored. */
+export async function renameConversation(id: string, title: string): Promise<string> {
+  const result = await request<{ conversation_id: string; title: string }>(`/api/chat/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title })
+  });
+  return result?.title ?? title;
+}
+
+// The backend keeps the latest feedback per answer; 404 = the answer is no longer known (expired chat)
+export async function sendFeedback(
+  conversationId: string,
+  turnId: string,
+  rating: FeedbackRating,
+  comment?: string
+): Promise<void> {
+  const body: { conversation_id: string; turn_id: string; rating: FeedbackRating; comment?: string } = {
+    conversation_id: conversationId,
+    turn_id: turnId,
+    rating
+  };
+  const text = comment?.trim().slice(0, FEEDBACK_COMMENT_MAX_LENGTH);
+  if (text) {
+    body.comment = text;
+  }
+  await request<unknown>('/api/feedback', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+}
+
+/**
+ * Usage counters for the signed-in user and/or a conversation. The backend needs at least one of
+ * the two, so this resolves to null without a request when there is neither.
+ */
+export async function getUsage(conversationId?: string | null): Promise<UsageSummary | null> {
+  const params = new URLSearchParams();
+  const userId = getChatUserId();
+  if (userId) {
+    params.set('user_id', userId);
+  }
+  if (conversationId) {
+    params.set('conversation_id', conversationId);
+  }
+  if (![...params.keys()].length) {
+    return null;
+  }
+  const usage = await request<UsageSummary>(`/api/usage?${params}`);
+  return {
+    conversation: usage?.conversation ?? null,
+    user: usage?.user ?? null,
+    context: usage?.context ?? null,
+    limit: usage?.limit ?? null
+  };
 }
 
 export function health(): Promise<HealthResponse> {

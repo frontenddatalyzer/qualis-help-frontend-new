@@ -1,0 +1,28 @@
+@let s = state();
+<div class="votes" role="group" aria-label="Rate this answer">
+    <button type="button" class="vote" [class.selected]="s.rating === 'up'" [attr.aria-pressed]="s.rating === 'up'"
+        [disabled]="s.expired || s.commentSent" (click)="vote('up')" aria-label="Good answer"
+        [title]="s.commentSent ? 'You already sent feedback on this answer' : 'Good answer'">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M7 10v11H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h3zm0 0 4-8a2.5 2.5 0 0 1 2.5 2.5V8h5.3a2 2 0 0 1 2 2.4l-1.6 8A2 2 0 0 1 17.2 20H7" />
+        </svg>
+    </button>
+    <button type="button" class="vote" [class.selected]="s.rating === 'down'" [attr.aria-pressed]="s.rating === 'down'"
+        [disabled]="s.expired" (click)="vote('down')" aria-label="Bad answer" title="Bad answer">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M17 14V3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-3zm0 0-4 8a2.5 2.5 0 0 1-2.5-2.5V16H5.2a2 2 0 0 1-2-2.4l1.6-8A2 2 0 0 1 6.8 4H17" />
+        </svg>
+    </button>
+</div>
+
+@if (s.commentOpen) {
+<form class="comment" (submit)="$event.preventDefault(); sendComment()">
+    <textarea rows="2" [value]="s.comment" (input)="setComment($event)" [attr.maxlength]="commentMaxLength"
+        placeholder="What was wrong? (optional)" aria-label="What was wrong?"></textarea>
+    <button type="submit" class="send" [disabled]="s.sending || !s.comment.trim()">Send</button>
+</form>
+}
+
+@if (s.note; as note) {
+<div class="note" role="status">{{ note }}</div>
+}
