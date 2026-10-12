@@ -1,14 +1,14 @@
-// Orange card. White text would only reach 2.6:1 on this background, so text is dark:
-// #1a1a1a is 6.7:1 and the muted brown 5.3:1 (WCAG AA needs 4.5:1).
-$bg: #ff7939;
+// "Clean white" card, matching the chat. Contrast on $bg: text 17.4:1, muted labels 4.8:1
+// (AA needs 4.5:1).
+$bg: #ffffff;
 $text: #1a1a1a;
-$muted: #4d1f00;
-$divider: rgba(0, 0, 0, 0.16);
-// Bars: a dark track with light fills, so every state stands out from the orange
-$track: rgba(0, 0, 0, 0.32);
-$normal: #ffffff;
-$warning: #ffe45c; // from 80%
-$danger: #6b0f1a; // from 100%
+$muted: #6b7280;
+$divider: #ececf0;
+// Bars: green normally, amber as the warning, red when over the limit (each at least 3:1 on white)
+$track: #ececf0;
+$normal: #16a34a;
+$warning: #d97706; // from 80%
+$danger: #dc2626; // from 100%
 
 // Positioned inside the chat column (.chat-main), under the header, right-aligned
 :host {
@@ -23,10 +23,10 @@ $danger: #6b0f1a; // from 100%
 .panel {
     max-height: calc(100vh - 110px); // the expanded breakdown scrolls on short screens
     overflow-y: auto;
-    border: 1px solid rgba(0, 0, 0, 0.12);
+    border: 1px solid #e5e7eb;
     border-radius: 14px;
     background: $bg;
-    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.18);
     font-size: 13px;
     line-height: 1.4;
     color: $text;
@@ -126,11 +126,11 @@ section {
     cursor: pointer;
 
     &:hover {
-        background: rgba(0, 0, 0, 0.08);
+        background: rgba(0, 0, 0, 0.05);
     }
 
     &:focus-visible {
-        outline: 2px solid $text;
+        outline: 2px solid #ff7200;
         outline-offset: -2px;
     }
 

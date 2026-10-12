@@ -3,9 +3,8 @@ $danger: #dc2626;
 $text-dark: #1a1a1a;
 $text-muted: #7b7b7b;
 $border: rgba(0, 0, 0, 0.08);
-$dock-width: 640px; // the chat panel ("chat" container) docks the sidebar from this width
+$dock-width: 640px; 
 
-// Narrow panel: a drawer over the chat, opened with the menu button
 :host {
     display: none;
     position: absolute;
@@ -32,7 +31,9 @@ $dock-width: 640px; // the chat panel ("chat" container) docks the sidebar from 
     width: min(270px, 86%);
     display: flex;
     flex-direction: column;
-    background: #faf9f7;
+    // The gradient is translucent, so it gets a solid white base: the sidebar then looks the same
+    // docked (over the white panel) and as a drawer (over the dimmed chat)
+    background: linear-gradient(180deg, #ff72001f, #ff720000), #ffffff;
     box-shadow: 4px 0 24px rgba(0, 0, 0, 0.14);
     animation: slide 0.18s ease-out;
 }
@@ -67,7 +68,6 @@ $dock-width: 640px; // the chat panel ("chat" container) docks the sidebar from 
         width: auto;
         box-shadow: none;
         animation: none;
-        background: linear-gradient(180deg, #ff72001f, #ff720000);;
     }
 }
 
