@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { AfterViewInit, Component, Input} from '@angular/core';
+import { Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 
 @Component({
@@ -11,49 +11,53 @@ import { ActivatedRoute, RouterModule } from '@angular/router';
   templateUrl: './hierarchy.html',
   styleUrl: './hierarchy.scss'
 })
-
-export class Hierarchy implements AfterViewInit  {
+export class Hierarchy implements OnInit, OnChanges {
   @Input() data: any[] = [];
-  selectedId?: any;
+  @Input() productSlug = '';   // 'spc' | 'fmea' — passed from common-help
+  selectedId: number | null = null;
 
-  constructor(
-    private activatedRoute: ActivatedRoute
-  ) {}
+  constructor(private activatedRoute: ActivatedRoute) {}
 
   ngOnInit(): void {
+    if (!this.productSlug) {
+      const segments = this.activatedRoute.snapshot.pathFromRoot
+        .flatMap(r => r.url.map(s => s.path));
+      this.productSlug = this.activatedRoute.snapshot.data['product']
+        ?? segments[segments.indexOf('products') + 1]
+        ?? '';
+    }
+
     this.activatedRoute.paramMap.subscribe(params => {
       const docId = params.get('docId');
       this.selectedId = docId ? Number(docId) : null;
+      this.applyExpansion();
     });
   }
 
-  ngAfterViewInit(): void {
-    setTimeout(() => {      
-      // expand the first folder if available
-      // if (this.selectedId && this.data?.length) {
-      //   const first = this.data[0];
-      //   if (this.isFolder(first)) {
-      //     first.expanded = true;
-      //   }
-      // }
+  // Runs whenever new tree data arrives (first load, or product switch)
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['data']) {
+      this.applyExpansion();
+    }
+  }
 
-      if (this.selectedId) {
-        this.expandToDoc(this.data, this.selectedId);
-      }
-  
-      if(this.selectedId === null) {
-        this.expandAll(this.data);
-      }
-    }, 1000);
+  private applyExpansion(): void {
+    if (!this.data?.length) return;
+
+    if (this.selectedId) {
+      this.expandToDoc(this.data, this.selectedId);
+    } else {
+      this.expandAll(this.data);
+    }
   }
 
   private expandAll(nodes: any[]): void {
-    if (!nodes || !nodes.length) return;
+    if (!nodes?.length) return;
 
     for (const node of nodes) {
       if (this.isFolder(node)) {
         node.expanded = true;
-        this.expandAll(node.children); // recurse into children
+        this.expandAll(node.children);
       }
     }
   }
@@ -63,19 +67,19 @@ export class Hierarchy implements AfterViewInit  {
 
     for (const node of nodes) {
       if (this.isDocument(node) && node.id === docId) {
-        return true; // found the document
+        return true;
       }
 
       if (this.isFolder(node)) {
         const found = this.expandToDoc(node.children, docId);
         if (found) {
-          node.expanded = true; // expand this folder because it contains the doc
+          node.expanded = true; // folder contains the selected doc
           return true;
         }
       }
     }
 
-    return false; // not found here
+    return false;
   }
 
   isFolder(item: any): boolean {
@@ -91,5 +95,4 @@ export class Hierarchy implements AfterViewInit  {
       node.expanded = !node.expanded;
     }
   }
-
 }

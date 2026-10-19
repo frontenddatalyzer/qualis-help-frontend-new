@@ -1,34 +1,34 @@
 <ul class="tree-list">
-  @for(node of data; track $index) {
+  @for (node of data; track node.id) {
     <li>
       <div class="tree-item">
         <!-- Folder -->
-        <ng-container *ngIf="isFolder(node)">
+        @if (isFolder(node)) {
           <span class="folder-icon" (click)="toggleFolder(node)">
             <span [ngClass]="node.expanded ? 'dl-folder-open' : 'dl-folder-close'"></span>
           </span>
           <span (click)="toggleFolder(node)">{{ node.text }}</span>
-        </ng-container>
-        
+        }
+
         <!-- Document -->
-        <ng-container *ngIf="isDocument(node)">
+        @if (isDocument(node)) {
           <span class="doc-icon">
             <span class="dl-document"></span>
           </span>
           <a [class.selected]="node.id === selectedId"
-             [routerLink]="['/products/spc', node.id]">
+             [routerLink]="['/products', productSlug, node.id]">
             <span>{{ node.text }}</span>
           </a>
-        </ng-container>
+        }
       </div>
-  
+
       <!-- Recursive tree for children -->
-       @if(isFolder(node) && node.expanded) {
-         <app-hierarchy
-           [data]="node.children"
-         >
-         </app-hierarchy>
-       }
+      @if (isFolder(node) && node.expanded) {
+        <app-hierarchy
+          [data]="node.children"
+          [productSlug]="productSlug">
+        </app-hierarchy>
+      }
     </li>
   }
 </ul>

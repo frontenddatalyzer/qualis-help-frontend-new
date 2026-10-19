@@ -3,19 +3,36 @@ import { environment } from '../../environments/environments';
 import { HttpClient } from '@angular/common/http';
 import { catchError, map, tap } from 'rxjs/operators';
 import { throwError } from 'rxjs';
+import { Products } from '../utils/products.enum';
 
 @Injectable({
   providedIn: 'root'
 })
 export class LandingService {
-  private spcEndPoint = `${environment.apiUrl}/spc-nodes`;
+  // private spcEndPoint = `${environment.apiUrl}/spc-nodes`;
+  // private fmeaEndPoint = `${environment.apiUrl}/fmea-nodes`;
+  private endpoints: Record<Products, string> = {
+    [Products.spc]: `${environment.apiUrl}/spc-nodes`,
+    [Products.fmea]: `${environment.apiUrl}/fmea-nodes`,
+  };
+
+  private slugs: Record<Products, string> = {
+    [Products.spc]: 'spc',
+    [Products.fmea]: 'fmea',
+  };
 
   constructor(
     private http: HttpClient
   ) {}
 
-  getDocumentationNodes() {
-    return this.http.get<any>(this.spcEndPoint).pipe(
+  getDocumentationNodes(product: Products) {
+    const url = this.endpoints[product];
+
+    if (!url) {
+      return throwError(() => new Error(`Unknown product: ${product}`));
+    }
+
+    return this.http.get<any>(url).pipe(
       catchError(error => {
         console.error('API Error:', error);
         return throwError(() => new Error('Failed to fetch documentation'));
@@ -23,6 +40,14 @@ export class LandingService {
     );
   }
 
+  getSlug(product: Products): string {
+    return this.slugs[product];
+  }
+
+  getProductBySlug(slug: string | null): Products | undefined {
+    return (Object.keys(this.slugs) as Products[]).find(p => this.slugs[p] === slug);
+  }
+  
   findFirstNDocuments(
     nodes: Array<{
       type: string;

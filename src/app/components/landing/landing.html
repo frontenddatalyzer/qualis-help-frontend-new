@@ -1,58 +1,68 @@
 <div class="wrapper">
-    <!-- <div class="radio-holder">
+    <div class="radio-holder">
         @for (product of products; track product) {
             <label>
-                <input type="radio" name="product" [value]="product" [(ngModel)]="selectedProduct" />
+                <input type="radio" name="product" [value]="product" [(ngModel)]="selectedProduct" (ngModelChange)="onProductSwitch(product)" />
                 <span>
                     <span class="dl-check"></span>
                     <span>{{ product }}</span>
                 </span>
             </label>
         }
-    </div> -->
+    </div>
 
     <div class="search-holder">
         <form (submit)="onSearch(); $event.preventDefault()">
             <div class="input-group">
-                <input type="text" class="form-control" name="search" [(ngModel)]="search" placeholder="Search In SPC" (input)="onSearch()" />
-                <button type="button" class="btn icon primary">
+                <input type="text" class="form-control" name="search"
+                    [(ngModel)]="search"
+                    [placeholder]="'Search In ' + selectedProduct"
+                    (input)="onSearch()" />
+                <button type="submit" class="btn icon primary">
                     <span class="dl-search"></span>
                 </button>
             </div>
         </form>
-        
+
         <!-- Search Results -->
-         @if(searchResults.length > 0) {
-             <div class="search-results">
-                @for (doc of searchResults; track $index) {
+        @if (searchResults.length > 0) {
+            <div class="search-results">
+                @for (doc of searchResults; track doc.id) {
                     <div class="result-item">
-                        <a [routerLink]="['/products/spc', doc.id]" [queryParams]="{ q: search }">
+                        <a [routerLink]="['/products', productSlug, doc.id]" [queryParams]="{ q: search }">
                             <h5>{{ doc.text }}</h5>
                             <p [innerHTML]="doc.snippet"></p>
                         </a>
                     </div>
                 }
-             </div>
-         }
+            </div>
+        }
     </div>
 
     <div class="action-holder">
         <button type="button" class="btn" (click)="gotoHelp()">
             <span class="dl-document"></span>
-            <span>Qualis 4.0 SPC Table of Contents</span>
+            <span>Qualis 4.0 {{ selectedProduct }} Table of Contents</span>
         </button>
     </div>
 
     <div class="card-section">
-        <h4>Top Help Documents</h4>
+        <h4>Top {{ selectedProduct }} Help Documents</h4>
         <div class="card-holder">
-            @for(doc of firstThreeDocs; track $index) {
+            @for (doc of firstThreeDocs; track doc.id) {
                 <div class="card">
-                    <a [routerLink]="['/products/spc', doc.id]">
-                        <p *ngIf="doc?.text; else noDesc">{{ doc.text }}</p>
-                        <ng-template #noDesc>No description</ng-template>
+                    <a [routerLink]="['/products', productSlug, doc.id]">
+                        @if (doc?.text) {
+                            <p>{{ doc.text }}</p>
+                        } @else {
+                            <p>No description</p>
+                        }
                     </a>
                 </div>
+            } @empty {
+                @if (!loading) {
+                    <p>No documents available for {{ selectedProduct }} yet.</p>
+                }
             }
         </div>
     </div>

@@ -7,15 +7,15 @@
                 </a>
             </li>
             <li>
-                <a [routerLink]="['/products/spc']">
-                    <span>Qualis 4.0 SPC</span>
+                <a [routerLink]="['/products', productSlug]">
+                    <span>Qualis 4.0 {{ product }}</span>
                 </a>
             </li>
             <li>
-                <span id="activeFileName">{{currentDocTxt}}</span>
+                <span id="activeFileName">{{ currentDocTxt }}</span>
                 <button type="button" class="btn" title="Copy URL" (click)="copyUrl()">
                     <span class="dl-copy"></span>
-                    @if(urlCopied) {
+                    @if (urlCopied) {
                         <span class="copy-feedback">URL copied!</span>
                     }
                 </button>
@@ -39,22 +39,22 @@
 <div class="document-wrapper">
     <div class="left-nav" [class.left-nav-scroll-fix]="activeScroll">
         <div class="hierarchy-holder">
-            <app-hierarchy [data]="treeData"></app-hierarchy>
+            <app-hierarchy [data]="treeData" [productSlug]="productSlug"></app-hierarchy>
         </div>
     </div>
     <div class="document-viewer" [innerHTML]="documentContentHtml"></div>
     <div class="right-nav">
         <h3>Table of Contents</h3>
         <ul class="toc">
-            @for(nav of tocNav; track nav.id) {
+            @for (nav of tocNav; track nav.id) {
                 <li>
-                    <a [routerLink]="[]" [fragment]="nav.url.substring(1)">{{nav.label}}</a>
+                    <a [routerLink]="[]" [fragment]="nav.url.substring(1)">{{ nav.label }}</a>
                 </li>
             }
         </ul>
     </div>
 </div>
-
+ 
 <button id="gotoTop" type="button" [class.visible]="activeScroll" (click)="gotoTop()">
     <span class="dl-top"></span>
 </button>

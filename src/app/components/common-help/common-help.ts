@@ -1,12 +1,13 @@
 import { CommonModule, Location, isPlatformBrowser } from '@angular/common';
-import { AfterViewInit, Component, HostListener, NgZone, OnInit, Inject, PLATFORM_ID } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { Component, HostListener, NgZone, OnInit, OnDestroy, Inject, PLATFORM_ID } from '@angular/core';
 import { Hierarchy } from '../hierarchy/hierarchy';
-import { environment } from '../../../environments/environments';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { Subscription } from 'rxjs';
 import { marked } from 'marked';
 import createDOMPurify from 'dompurify';
+import { LandingService } from '../../services/landing.service';
+import { Products } from '../../utils/products.enum';
 
 let DOMPurifyInstance: ReturnType<typeof createDOMPurify> | null = null;
 
@@ -20,9 +21,8 @@ let DOMPurifyInstance: ReturnType<typeof createDOMPurify> | null = null;
   templateUrl: './common-help.html',
   styleUrl: './common-help.scss'
 })
-export class CommonHelp implements OnInit, AfterViewInit {
+export class CommonHelp implements OnInit, OnDestroy {
   treeData: any[] = [];
-  private spcEndPoint = `${environment.apiUrl}/spc-nodes`;
   documentContent: string = '';
   documentContentHtml?: SafeHtml;
   activeScroll: boolean = false;
@@ -30,12 +30,20 @@ export class CommonHelp implements OnInit, AfterViewInit {
 
   searchTerm = '';
   currentDocId: number | null = null;
-  currentDocTxt!: string;
+  currentDocTxt = '';
   urlCopied: boolean = false;
 
+  product?: Products;
+  productSlug = '';
+
+  private allNodes: any[] = [];           // cached Strapi response for the current product
+  private loadedSlug: string | null = null;
+  private dataSub?: Subscription;
+
   constructor(
-    private http: HttpClient,
+    private landingService: LandingService,
     private activatedRoute: ActivatedRoute,
+    private router: Router,
     private sanitizer: DomSanitizer,
     private ngZone: NgZone,
     private location: Location,
@@ -48,46 +56,112 @@ export class CommonHelp implements OnInit, AfterViewInit {
       DOMPurifyInstance = createDOMPurify(window as any);
     }
 
-    // 1) Watch query params first (so searchTerm gets set as early as possible)
+    // 1) Watch query params (search term for highlighting)
     this.activatedRoute.queryParams.subscribe(params => {
-      const newQ = params['q'] || '';
-      // If query changed and doc already loaded, re-render to add highlights
       const prevQ = this.searchTerm;
-      this.searchTerm = newQ;
+      this.searchTerm = params['q'] || '';
       if (this.currentDocId && prevQ !== this.searchTerm && this.documentContent) {
-        // re-render current markdown with the updated search term
         this.renderDocumentWithHighlight();
       }
     });
 
-    // 2) Fetch tree for left nav (unchanged)
-    this.http.get<any>(this.spcEndPoint)
-      .subscribe({
-        next: (res) => {
-          const treeData = res?.data?.[0]?.children ?? [];
-          
-          // Keep only items where showTree === true
-          const filteredTreeData = treeData.filter((item: any) => item.showTree);
-          this.treeData = filteredTreeData;
-        },
-        error: (err) => {
-          console.error('Error fetching SPC data:', err);
-        }
-      });
-
-    // 3) Watch route param for docId
+    // 2) Watch route params (product + docId)
     this.activatedRoute.paramMap.subscribe(params => {
-      const docIdParam = params.get('docId');
-      const docId = Number(docIdParam);
-      if (docId) {
-        this.currentDocId = docId;
-        this.loadDocumentContent(docId);
+      // Product: route data → :product param → URL segment after 'products'
+      const segments = this.activatedRoute.snapshot.pathFromRoot
+        .flatMap(r => r.url.map(s => s.path));          // e.g. ['products', 'fmea', '5']
+      const urlSlug = segments[segments.indexOf('products') + 1];
+      
+      // Product comes from route data (products/spc, products/fmea),
+      // or from a :product param if the routes are made generic later
+      const slug = this.activatedRoute.snapshot.data['product']
+        ?? params.get('product')
+        ?? urlSlug;
+
+      const product = this.landingService.getProductBySlug(slug);
+
+      if (!product) {
+        console.warn('Unknown product slug:', slug);
+        this.router.navigate(['/']);
+        return;
+      }
+
+      const docId = Number(params.get('docId')) || null;
+      this.product = product;
+      this.productSlug = slug;
+
+      if (slug !== this.loadedSlug) {
+        this.loadProductData(product, slug, docId);  // product changed → fetch once
+      } else {
+        this.showDocument(docId);                     // same product → use cached data
       }
     });
   }
 
-  ngAfterViewInit() {
-    // no-op: scroll is handled after render in loadDocumentContent / renderDocumentWithHighlight
+  ngOnDestroy() {
+    this.dataSub?.unsubscribe();
+  }
+
+  private loadProductData(product: Products, slug: string, docId: number | null) {
+    this.dataSub?.unsubscribe(); // drop a pending request if the user switches quickly
+    this.treeData = [];
+    this.allNodes = [];
+    this.clearDocument();
+
+    this.dataSub = this.landingService.getDocumentationNodes(product).subscribe({
+      next: (res) => {
+        this.allNodes = res?.data ?? [];
+
+        // Left nav: keep only items where showTree === true
+        const children = this.allNodes[0]?.children ?? [];
+        this.treeData = children.filter((item: any) => item.showTree);
+
+        this.loadedSlug = slug;
+        this.showDocument(docId);
+      },
+      error: (err) => {
+        console.error(`Error fetching ${product} data:`, err);
+        this.documentContent = '<p>Error loading document.</p>';
+        this.renderMarkdownToHtml(this.documentContent);
+      }
+    });
+  }
+
+  private showDocument(docId: number | null) {
+    this.currentDocId = docId;
+
+    if (!docId) {
+      this.clearDocument();
+      return;
+    }
+
+    const foundDoc = this.findDocumentById(this.allNodes, docId);
+
+    if (foundDoc) {
+      this.tocNav = foundDoc.navigation ?? [];
+      this.documentContent = foundDoc.content || '';
+      this.currentDocTxt = foundDoc.text;
+    } else {
+      this.tocNav = [];
+      this.currentDocTxt = '';
+      this.documentContent = '<p>Document not found.</p>';
+    }
+
+    // Render (with highlight if searchTerm present)
+    this.renderDocumentWithHighlight();
+
+    // After DOM insertion, update anchors and scroll to first match
+    setTimeout(() => {
+      this.updateAnchorHrefFromMarkdownHtml();
+      this.scrollToFirstMatch();
+    }, 250);
+  }
+
+  private clearDocument() {
+    this.documentContent = '';
+    this.documentContentHtml = undefined;
+    this.tocNav = [];
+    this.currentDocTxt = '';
   }
 
   private findDocumentById(nodes: any[], id: number): any | null {
@@ -117,7 +191,8 @@ export class CommonHelp implements OnInit, AfterViewInit {
       return;
     }
 
-    const backendUrl = 'https://helpbackend.qualis40.io';
+    // const backendUrl = 'https://helpbackend.qualis40.io';
+    const backendUrl = 'http://localhost:1337';
     const renderer = new marked.Renderer();
 
     renderer.heading = ({ tokens, depth }) => {
@@ -138,7 +213,6 @@ export class CommonHelp implements OnInit, AfterViewInit {
       return `<h${depth} id="${id}">${text}</h${depth}>`;
     };
 
-    // Image fix (object params, not 3 args)
     renderer.image = ({ href, title, text }) => {
       if (href?.startsWith('http://localhost:1337')) {
         href = href.replace('http://localhost:1337', backendUrl);
@@ -146,16 +220,13 @@ export class CommonHelp implements OnInit, AfterViewInit {
       return `<img src="${href}" alt="${text || ''}" ${title ? `title="${title}"` : ''} />`;
     };
 
-    // Synchronous conversion (we call marked synchronously here)
-    // const rawHtml = marked(markdown, { renderer }) as string;
-    // Convert markdown to raw HTML
+    // Markdown → raw HTML
     let rawHtml = marked(markdown, { renderer }) as string;
 
     // Replace Strapi localhost URLs with public backend URL
-    
     rawHtml = rawHtml.replace(/http:\/\/localhost:1337/g, backendUrl);
 
-    // Allow <mark> tag so highlights are preserved
+    // Allow <mark> so search highlights are preserved
     const clean = DOMPurifyInstance
       ? DOMPurifyInstance.sanitize(rawHtml, { ADD_TAGS: ['mark'] })
       : rawHtml;
@@ -163,45 +234,12 @@ export class CommonHelp implements OnInit, AfterViewInit {
     this.documentContentHtml = this.sanitizer.bypassSecurityTrustHtml(clean);
   }
 
-  private async loadDocumentContent(docId: number) {
-    this.documentContent = '';
-    this.http.get<any>(`${this.spcEndPoint}`).subscribe({
-      next: (res) => {
-        const data = res?.data;
-        const foundDoc = this.findDocumentById(data, docId);
-
-        if (foundDoc) {
-          this.tocNav = foundDoc?.navigation;
-          this.documentContent = foundDoc?.content || '';
-          this.currentDocTxt = foundDoc?.text;
-        } else {
-          this.documentContent = '<p>Document not found.</p>';
-        }
-
-        // Render (with highlight if searchTerm present)
-        this.renderDocumentWithHighlight();
-
-        // After a short delay to ensure DOM insertion, update anchors and scroll
-        setTimeout(() => {
-          this.updateAnchorHrefFromMarkdownHtml();
-          this.scrollToFirstMatch();
-        }, 250);
-      },
-      error: (err) => {
-        console.error('Error fetching document:', err);
-        this.documentContent = '<p>Error loading document.</p>';
-        this.renderMarkdownToHtml(this.documentContent);
-      }
-    });
-  }
-
-  // Render the existing this.documentContent while injecting <mark> around searchTerm
+  // Render this.documentContent while wrapping searchTerm in <mark>
   private renderDocumentWithHighlight() {
     let mdToRender = this.documentContent || '';
 
     if (this.searchTerm) {
       const rx = new RegExp(this.escapeRegex(this.searchTerm), 'ig');
-      // Wrap matches with <mark>. We do this on the markdown text before passing to marked
       mdToRender = mdToRender.replace(rx, '<mark>$&</mark>');
     }
 
@@ -210,8 +248,7 @@ export class CommonHelp implements OnInit, AfterViewInit {
 
   private updateAnchorHrefFromMarkdownHtml() {
     if (!isPlatformBrowser(this.platformId)) {
-      // Skip on server (no DOM available)
-      return;
+      return; // no DOM on server
     }
 
     const anchors = document.querySelectorAll('a[href^="#"]');
@@ -233,16 +270,13 @@ export class CommonHelp implements OnInit, AfterViewInit {
       return; // skip in SSR
     }
 
-    // Query inside the document-viewer container only
     const container = document.querySelector('.document-viewer');
     if (!container) return;
 
     const firstMark = container.querySelector('mark');
     if (firstMark) {
-      // scroll the element into center of view
       (firstMark as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-      // optional visual flash: add class then remove after timeout
       (firstMark as HTMLElement).classList.add('search-highlight-flash');
       setTimeout(() => (firstMark as HTMLElement).classList.remove('search-highlight-flash'), 1200);
     }
@@ -255,11 +289,7 @@ export class CommonHelp implements OnInit, AfterViewInit {
   @HostListener('window:scroll', [])
   onWindowScroll() {
     this.ngZone.run(() => {
-      if (window.scrollY > 51) {
-        this.activeScroll = true;
-      } else {
-        this.activeScroll = false;
-      }
+      this.activeScroll = window.scrollY > 51;
     });
   }
 
@@ -272,8 +302,6 @@ export class CommonHelp implements OnInit, AfterViewInit {
 
     navigator.clipboard.writeText(url).then(() => {
       this.urlCopied = true;
-
-      // Hide feedback after 2s
       setTimeout(() => this.urlCopied = false, 2000);
     }).catch(err => {
       console.error('Failed to copy:', err);

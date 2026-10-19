@@ -18,8 +18,8 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
   styleUrl: './landing.scss'
 })
 export class Landing {
-  products = Object.values(Products);  // Convert enum to array
-  // selectedProduct: string = this.products[0];
+  products = Object.values(Products);           // ['SPC', 'FMEA']
+  selectedProduct: Products = this.products[0];
   search: string = '';
   firstThreeDocs: any;
   loading = false;
@@ -39,11 +39,22 @@ export class Landing {
     this.loadAllDocs();
   }
 
+  get productSlug(): string {
+    return this.landingService.getSlug(this.selectedProduct);
+  }
+
+  onProductSwitch(product: Products) {
+    this.selectedProduct = product;
+    this.search = '';
+    this.searchResults = [];
+    this.loadAllDocs();
+  }
+
   loadAllDocs() {
     this.loading = true;
     this.error = null;
 
-    this.landingService.getDocumentationNodes().subscribe({
+    this.landingService.getDocumentationNodes(this.selectedProduct).subscribe({
       next: (response: any) => {
         const treeData = response?.data ?? [];
         
@@ -124,6 +135,6 @@ export class Landing {
   }
 
   gotoHelp() {
-    this.router.navigate(['products/spc']);
+    this.router.navigate(['/products', this.productSlug]);
   }
 }

@@ -36,6 +36,7 @@
 
             .dl-check {
                 font-size: 22px;
+                display: none;
             }
         }
 
@@ -54,6 +55,10 @@
 
                     .fa-check {
                         opacity: 1;
+                    }
+
+                    .dl-check {
+                        display: inline-block;
                     }
                 }
             }

@@ -1,0 +1,30 @@
+<div class="help-tool">
+    <div>
+        <ul class="breadcrumb">
+            <li>
+                <a [routerLink]="['/']" class="btn">
+                    <span class="dl-home"></span>
+                </a>
+            </li>
+            <li>
+                <span>Qualis FMEA</span>
+                
+                <button type="button" class="btn" title="Copy URL" (click)="copyUrl()">
+                    <span class="dl-copy"></span>
+                    @if(urlCopied) {
+                        <span class="copy-feedback">URL copied!</span>
+                    }
+                </button>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<div class="document-wrapper">
+    <div class="left-nav">
+        <h1>Qualis FMEA Table of Contents</h1>
+        <div class="hierarchy-holder">
+            <app-hierarchy [data]="treeData" [productSlug]="'fmea'"></app-hierarchy>
+        </div>
+    </div>
+</div>
