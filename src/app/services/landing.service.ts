@@ -14,11 +14,13 @@ export class LandingService {
   private endpoints: Record<Products, string> = {
     [Products.spc]: `${environment.apiUrl}/spc-nodes`,
     [Products.fmea]: `${environment.apiUrl}/fmea-nodes`,
+    [Products.msa]: `${environment.apiUrl}/msa-nodes`,
   };
 
   private slugs: Record<Products, string> = {
     [Products.spc]: 'spc',
     [Products.fmea]: 'fmea',
+    [Products.msa]: 'msa',
   };
 
   constructor(
